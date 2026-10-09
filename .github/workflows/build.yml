@@ -1,4 +1,4 @@
-name: Build Sonora APK
+name: Build Sonora apk
 
 on:
   push:
