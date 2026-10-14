@@ -6,9 +6,18 @@ on:
     paths:
       - "drop/**"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, e.g. 1.1.0. Leave empty to only build."
+        required: false
+        default: ""
+      notes:
+        description: "What's new (shown to users in the update pop-up)"
+        required: false
+        default: ""
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -73,6 +82,8 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          ACOUSTID_KEY: ${{ secrets.ACOUSTID_KEY }}
+          VERSION_NAME: ${{ inputs.version }}
         run: gradle --no-daemon assembleRelease
 
       - name: Collect APK
@@ -80,6 +91,25 @@ jobs:
           mkdir -p "$RUNNER_TEMP/out"
           find "$PROJECT_DIR" -path "*outputs/apk/release/*.apk" -exec cp {} "$RUNNER_TEMP/out/Sonora.apk" \;
           ls -l "$RUNNER_TEMP/out"
+
+      - name: Create draft release
+        if: ${{ inputs.version != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then
+            echo "Version must look like 1.1.0"
+            exit 1
+          fi
+          cp "$RUNNER_TEMP/out/Sonora.apk" "$RUNNER_TEMP/out/Sonora-$VERSION.apk"
+          gh release create "v$VERSION" "$RUNNER_TEMP/out/Sonora-$VERSION.apk" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Sonora $VERSION" \
+            --notes "$NOTES" \
+            --draft
 
       - name: Upload APK
         uses: actions/upload-artifact@v6
