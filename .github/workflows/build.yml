@@ -5,6 +5,7 @@ on:
     branches: [main, master]
     paths:
       - "drop/**"
+      - "test/**"
   workflow_dispatch:
     inputs:
       release:
@@ -19,9 +20,6 @@ on:
 permissions:
   contents: write
 
-env:
-  BASE_VERSION: "1.0"
-
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -29,23 +27,50 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Set app version
-        run: |
-          version="${BASE_VERSION}.${{ github.run_number }}"
-          echo "App version: $version"
-          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+        with:
+          fetch-depth: 0
 
       - name: Locate newest zip in drop
         id: zip
         run: |
-          latest=$(ls -t drop/*.zip 2>/dev/null | head -n 1 || true)
+          latest=$(git log -1 --diff-filter=AM --name-only --format= -- 'drop/*.zip' 'test/*.zip' | head -n 1)
+          if [ -z "$latest" ] || [ ! -f "$latest" ]; then
+            latest=$(ls drop/*.zip test/*.zip 2>/dev/null | sort | tail -n 1 || true)
+          fi
           if [ -z "$latest" ]; then
-            echo "No zip file found in drop/"
+            echo "No zip file found in drop/ or test/"
             exit 1
           fi
           echo "Zip: $latest"
           echo "path=$latest" >> "$GITHUB_OUTPUT"
+          case "$latest" in
+            drop/*) echo "channel=drop" >> "$GITHUB_OUTPUT" ;;
+            *) echo "channel=test" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Read app version
+        env:
+          ZIP_PATH: ${{ steps.zip.outputs.path }}
+        run: |
+          version_file="$(dirname "$ZIP_PATH")/version.txt"
+          if [ ! -f "$version_file" ]; then
+            echo "Missing $version_file. Add a version.txt next to the zip containing a version like 1.2.0"
+            exit 1
+          fi
+          version="$(tr -d '[:space:]' < "$version_file")"
+          if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Invalid version '$version' in $version_file. Use the form MAJOR.MINOR.PATCH, for example 1.2.0"
+            exit 1
+          fi
+          IFS=. read -r major minor patch <<< "$version"
+          if [ "$minor" -gt 99 ] || [ "$patch" -gt 99 ]; then
+            echo "MINOR and PATCH must be 99 or less"
+            exit 1
+          fi
+          code=$(( major * 10000 + minor * 100 + patch ))
+          echo "App version: $version (code $code)"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+          echo "APP_VERSION_CODE=$code" >> "$GITHUB_ENV"
 
       - name: Extract project
         env:
@@ -96,6 +121,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           ACOUSTID_KEY: ${{ secrets.ACOUSTID_KEY }}
           VERSION_NAME: ${{ env.APP_VERSION }}
+          VERSION_CODE: ${{ env.APP_VERSION_CODE }}
         run: gradle --no-daemon assembleRelease
 
       - name: Collect APK
@@ -105,19 +131,32 @@ jobs:
           cp "$RUNNER_TEMP/out/Sonora.apk" "$RUNNER_TEMP/out/Sonora-$APP_VERSION.apk"
           ls -l "$RUNNER_TEMP/out"
 
-      - name: Create draft release
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release }}
+      - name: Create release
+        if: ${{ (github.event_name == 'push' && steps.zip.outputs.channel == 'drop') || inputs.release }}
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ inputs.notes }}
+          DISPATCH_NOTES: ${{ inputs.notes }}
+          IS_PUSH: ${{ github.event_name == 'push' && steps.zip.outputs.channel == 'drop' }}
         run: |
+          NOTES="$DISPATCH_NOTES"
+          if [ -z "$NOTES" ] && [ -f drop/notes.txt ]; then
+            NOTES="$(cat drop/notes.txt)"
+          fi
           NOTES="${NOTES:-Bug fixes and improvements}"
+          DRAFT_FLAG="--draft"
+          if [ "$IS_PUSH" = "true" ]; then
+            DRAFT_FLAG=""
+          fi
+          if gh release view "v$APP_VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release v$APP_VERSION already exists. Increase the number in version.txt"
+            exit 1
+          fi
           gh release create "v$APP_VERSION" "$RUNNER_TEMP/out/Sonora-$APP_VERSION.apk" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "Sonora $APP_VERSION" \
             --notes "$NOTES" \
-            --draft
+            $DRAFT_FLAG
 
       - name: Upload APK
         uses: actions/upload-artifact@v6
