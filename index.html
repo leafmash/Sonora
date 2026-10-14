@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sonora – Music player with synced lyrics</title>
+<meta name="description" content="Sonora is a free Android music player with synced lyrics, word meanings, cover-art colors, party mode and more.">
+<meta name="theme-color" content="#0E0C14">
+<meta property="og:title" content="Sonora – Music player with synced lyrics">
+<meta property="og:description" content="Music that glows in the colors of the song. Free for Android.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'%3E%3Crect width='108' height='108' rx='26' fill='%2315111F'/%3E%3Cg stroke-width='7' stroke-linecap='round'%3E%3Cpath d='M30 48v12M42 38v32M66 40v28M78 49v10' stroke='%23C9B6FF'/%3E%3Cpath d='M54 30v48' stroke='%23FF9AD5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;800&family=Hanken+Grotesk:wght@400;500;600&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@property --a { syntax: "<color>"; inherits: true; initial-value: #C9B6FF; }
+@property --b { syntax: "<color>"; inherits: true; initial-value: #FFA6DA; }
+@property --c { syntax: "<color>"; inherits: true; initial-value: #8FE0D0; }
+
+:root {
+  --a: #C9B6FF;
+  --b: #FFA6DA;
+  --c: #8FE0D0;
+  --bg: #0E0C14;
+  --s0: #0A0910;
+  --s1: #14121C;
+  --s2: #191722;
+  --s3: #211E2C;
+  --s4: #2A2737;
+  --ink: #ECE6F5;
+  --mute: #C9C4D6;
+  --dim: #938EA3;
+  --line: #3A3649;
+  --display: "Bricolage Grotesque", "Hind Siliguri", system-ui, sans-serif;
+  --body: "Hanken Grotesk", "Hind Siliguri", system-ui, sans-serif;
+  --r-s: 14px;
+  --r-m: 20px;
+  --r-l: 28px;
+  --r-xl: 36px;
+  transition: --a .9s ease, --b .9s ease, --c .9s ease;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 5.5rem; -webkit-text-size-adjust: 100%; overflow-x: clip; max-width: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  overflow-x: clip;
+  max-width: 100%;
+  min-height: 100vh;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: .05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+main, section, header, footer, .wrap { max-width: 100%; }
+.wrap > *, .hero-grid > *, .lyrics-grid > *, .control-grid > *, .lib-grid > *, .sound-grid > *, .party > *, .look-grid > * { min-width: 0; }
+img, svg, video { max-width: 100%; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; width: 100%; z-index: 70; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--a), var(--b), var(--c)); }
+.orb { position: absolute; border-radius: 50%; filter: blur(70px); pointer-events: none; opacity: .55; will-change: transform; }
+.orb.o1 { width: 360px; height: 360px; left: -140px; top: 40px; background: var(--b); animation: float 14s ease-in-out infinite alternate; }
+.orb.o2 { width: 320px; height: 320px; right: -120px; top: 180px; background: var(--a); animation: float 17s ease-in-out -4s infinite alternate; }
+.orb.o3 { width: 240px; height: 240px; left: 40%; bottom: -80px; background: var(--c); opacity: .3; animation: float 19s ease-in-out -8s infinite alternate; }
+@keyframes float { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(40px,-30px,0) scale(1.15); } }
+.rv { opacity: 0; translate: 0 28px; transition: opacity .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s), translate .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s); }
+.rv.in { opacity: 1; translate: none; }
+.grad { background: linear-gradient(100deg, var(--a), var(--b) 55%, var(--c)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+html[lang="bn"] body { line-height: 1.85; }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(95vw 95vw at 5% -5%, color-mix(in srgb, var(--b) 20%, transparent), transparent 70%),
+    radial-gradient(85vw 85vw at 100% 12%, color-mix(in srgb, var(--a) 20%, transparent), transparent 70%),
+    radial-gradient(70vw 70vw at 100% 58%, color-mix(in srgb, var(--c) 14%, transparent), transparent 70%);
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+svg { display: block; }
+:focus-visible { outline: 2px solid var(--a); outline-offset: 3px; border-radius: 8px; }
+
+.wrap { width: min(1180px, 100% - 2.5rem); margin-inline: auto; }
+.sec { padding: clamp(4.5rem, 9vw, 8rem) 0; }
+
+h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; }
+h1 { font-weight: 800; font-size: clamp(2.7rem, 6.4vw, 5.1rem); line-height: 1.02; letter-spacing: -0.035em; text-wrap: balance; }
+h2 { font-weight: 800; font-size: clamp(2rem, 4.2vw, 3.3rem); line-height: 1.08; letter-spacing: -0.03em; text-wrap: balance; }
+html[lang="bn"] h1 { line-height: 1.22; letter-spacing: -0.01em; }
+html[lang="bn"] h2 { line-height: 1.25; letter-spacing: -0.01em; }
+html[lang="bn"] h3 { letter-spacing: 0; }
+.lead { color: var(--mute); font-size: clamp(1.05rem, 1.6vw, 1.25rem); max-width: 38rem; text-wrap: pretty; }
+.head { display: grid; gap: 1.1rem; margin-bottom: clamp(2.2rem, 5vw, 3.6rem); max-width: 46rem; }
+
+.mark { --h0: .4; --h1: .76; --h2: 1; --h3: .7; --h4: .4; width: 1em; height: 1em; display: flex; justify-content: space-between; align-items: center; font-size: 1.5rem; }
+.mark i { width: .15em; height: 100%; border-radius: 99px; background: var(--mk, var(--a)); transform: scaleY(var(--h)); transform-origin: center; }
+.mark i:nth-child(1) { --h: var(--h0); }
+.mark i:nth-child(2) { --h: var(--h1); }
+.mark i:nth-child(3) { --h: var(--h2); background: var(--mk3, var(--b)); }
+.mark i:nth-child(4) { --h: var(--h3); }
+.mark i:nth-child(5) { --h: var(--h4); }
+.mark.dance i { animation: dance var(--p, .5s) var(--e, ease-in-out) var(--d, 0s) infinite alternate; }
+.mark.dance i:nth-child(1) { --p: .52s; --d: 0s; }
+.mark.dance i:nth-child(2) { --p: .41s; --d: .14s; }
+.mark.dance i:nth-child(3) { --p: .6s; --d: .06s; }
+.mark.dance i:nth-child(4) { --p: .46s; --d: .22s; }
+.mark.dance i:nth-child(5) { --p: .56s; --d: .1s; }
+@keyframes dance { from { transform: scaleY(.28); } to { transform: scaleY(1); } }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+  padding: .7rem 1.25rem; border-radius: 999px; font-weight: 600; font-size: .95rem; line-height: 1.2;
+  background: linear-gradient(100deg, var(--a), var(--b)); color: #1b1030;
+  transition: transform .2s ease, box-shadow .2s ease;
+  box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--a) 70%, transparent);
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0) scale(.98); }
+.btn svg { width: 1.15em; height: 1.15em; }
+.btn.big { padding: 1rem 1.7rem; font-size: 1.05rem; }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+.btn.ghost:hover { box-shadow: inset 0 0 0 1.5px var(--a); }
+
+.nav { position: sticky; top: 0; z-index: 30; backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3); background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: .6rem; height: 4.2rem; }
+.nav .brand, .nav .actions { flex: none; }
+.brand { display: flex; align-items: center; gap: .7rem; font-family: var(--display); font-weight: 800; font-size: 1.35rem; letter-spacing: -0.03em; }
+.nav nav { display: flex; gap: 1.8rem; color: var(--mute); font-size: .95rem; font-weight: 500; }
+.nav nav a:hover { color: var(--ink); }
+.nav .actions { display: flex; align-items: center; gap: .7rem; }
+.lang { display: flex; padding: 3px; border-radius: 999px; background: var(--s2); box-shadow: inset 0 0 0 1px var(--line); }
+.lang button { padding: .3rem .75rem; border-radius: 999px; font-size: .82rem; font-weight: 600; color: var(--mute); }
+.lang button[aria-pressed="true"] { background: var(--s4); color: var(--ink); }
+.nav .btn { padding: .55rem 1.05rem; font-size: .88rem; }
+
+.hero { padding: clamp(2.5rem, 6vw, 5rem) 0 clamp(3rem, 7vw, 6rem); }
+.hero-grid { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,.9fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; }
+.hero-copy { display: grid; gap: 1.6rem; justify-items: start; }
+.badge { display: inline-flex; align-items: center; gap: .6rem; padding: .4rem .95rem .4rem .7rem; border-radius: 999px; background: var(--s2); box-shadow: inset 0 0 0 1px var(--line); font-size: .88rem; font-weight: 500; color: var(--mute); }
+.badge i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 25%, transparent); }
+.cta-row { display: flex; flex-wrap: wrap; gap: .8rem; }
+.meta { color: var(--dim); font-size: .9rem; display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; }
+.meta b { color: var(--mute); font-weight: 600; }
+
+.stage { display: grid; justify-items: center; gap: 1.6rem; }
+.phone {
+  width: min(310px, 100%);
+  aspect-ratio: 310 / 640;
+  border-radius: 46px;
+  padding: 12px;
+  container-type: inline-size;
+  background: var(--s0);
+  box-shadow: inset 0 0 0 1.5px var(--line), 0 50px 90px -30px color-mix(in srgb, var(--a) 45%, transparent), 0 20px 40px -20px rgba(0,0,0,.7);
+}
+.screen {
+  height: 100%; border-radius: 36px; overflow: hidden; position: relative;
+  padding: 12cqw 6.3cqw 5cqw; display: flex; flex-direction: column;
+  background:
+    radial-gradient(90% 38% at 50% 30%, color-mix(in srgb, var(--b) 20%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--b) 34%, var(--bg)) 0%, color-mix(in srgb, var(--a) 16%, var(--bg)) 58%, color-mix(in srgb, var(--b) 9%, var(--bg)) 100%);
+}
+.screen::before { content: ""; position: absolute; top: 9px; left: 50%; width: 74px; height: 20px; border-radius: 99px; background: var(--s0); transform: translateX(-50%); }
+.scr-top { display: grid; grid-template-columns: 8cqw minmax(0,1fr) 8cqw; align-items: center; height: 10.5cqw; color: var(--ink); }
+.scr-top .ico { width: 8cqw; height: 8cqw; display: grid; place-items: center; }
+.scr-top .more { justify-self: end; }
+.scr-top svg { width: 6.4cqw; height: 6.4cqw; }
+.tinfo { min-width: 0; text-align: center; }
+.tinfo h3 { font-size: 4.4cqw; font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tinfo p { color: var(--mute); font-size: 3.7cqw; font-weight: 500; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cover {
+  aspect-ratio: 1; border-radius: 7cqw; margin-top: 10cqw; display: grid; place-items: center; position: relative; overflow: hidden; flex: none;
+  background: linear-gradient(145deg, var(--a), var(--b) 68%, var(--c));
+  box-shadow: 0 24px 40px -22px color-mix(in srgb, var(--b) 80%, transparent);
+}
+.cover .mark { font-size: 26cqw; --mk: rgba(14,12,20,.5); --mk3: rgba(14,12,20,.78); }
+.cover::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 20% 15%, rgba(255,255,255,.35), transparent 55%); }
+.cur { display: block; width: 100%; margin-top: 7cqw; min-height: 2.8em; text-align: left; color: #fff; font-family: var(--display); font-size: 5.3cqw; font-weight: 700; line-height: 1.4; letter-spacing: -0.01em; text-shadow: 0 0 2.4cqw rgba(255,255,255,.28); }
+.cur span { display: inline-block; animation: swap .5s ease; }
+@keyframes swap { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fav { display: flex; justify-content: flex-end; margin-top: 2.5cqw; padding-right: 3cqw; color: var(--ink); }
+.fav svg { width: 6.6cqw; height: 6.6cqw; }
+.wave { position: relative; display: flex; align-items: center; justify-content: space-between; gap: .6cqw; height: 14cqw; margin-top: 4cqw; cursor: pointer; touch-action: none; }
+.wave i { flex: 1; height: calc(var(--h) * 100%); min-height: 1.2cqw; border-radius: 99px; background: color-mix(in srgb, var(--ink) 24%, transparent); transition: background .15s; }
+.wave i.on { background: var(--b); }
+.wave::after { content: ""; position: absolute; top: 0; bottom: 0; left: calc(var(--p, 0) * (100% - .55cqw)); width: .55cqw; border-radius: 99px; background: #fff; pointer-events: none; }
+.times { display: flex; justify-content: space-between; padding-inline: 1cqw; margin-top: 1.2cqw; font-size: 3.3cqw; font-weight: 500; color: var(--mute); font-variant-numeric: tabular-nums; }
+.controls { display: grid; grid-template-columns: 1fr 1fr 1.2fr 1fr 1fr; align-items: center; justify-items: center; margin: 3.5cqw -3cqw 0; }
+.controls button, .controls .side { width: 11cqw; height: 11cqw; display: grid; place-items: center; border-radius: 50%; color: var(--ink); }
+.controls button svg { width: 9.8cqw; height: 9.8cqw; }
+.controls .side { color: var(--mute); }
+.controls .side svg { width: 5.8cqw; height: 5.8cqw; }
+.controls .play { width: 19.3cqw; height: 19.3cqw; background: linear-gradient(160deg, color-mix(in srgb, var(--b) 18%, #fff), color-mix(in srgb, var(--b) 62%, #fff)); color: #1b1030; box-shadow: 0 3cqw 6cqw -3cqw color-mix(in srgb, var(--b) 70%, transparent); }
+.controls .play svg { width: 10.5cqw; height: 10.5cqw; }
+.extras { display: flex; justify-content: space-around; align-items: center; margin-top: auto; color: var(--mute); }
+.extras svg { width: 6.6cqw; height: 6.6cqw; }
+
+.swatches { display: flex; gap: .8rem; align-items: center; }
+.swatches button { width: 46px; height: 46px; border-radius: 16px; position: relative; transition: transform .2s ease; }
+.swatches button:hover { transform: translateY(-3px); }
+.swatches button[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--bg), 0 0 0 4.5px var(--ink); }
+.hint { color: var(--dim); font-size: .85rem; text-align: center; max-width: 18rem; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); gap: 1.9rem 2.6rem; }
+.facts > div { border-top: 1px solid var(--line); padding-top: 1rem; }
+.facts dt { font-family: var(--display); font-weight: 600; font-size: 1.12rem; letter-spacing: -0.01em; margin-bottom: .3rem; }
+.facts dd { color: var(--mute); font-size: .98rem; line-height: 1.6; }
+html[lang="bn"] .facts dd { line-height: 1.75; }
+
+.lyrics-grid { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,.75fr); gap: clamp(1.5rem, 4vw, 3.5rem); margin-bottom: clamp(2.5rem, 5vw, 4rem); align-items: start; }
+.lyr-stage { position: relative; border-radius: var(--r-xl); padding: clamp(1.5rem, 4vw, 2.6rem); background: linear-gradient(160deg, color-mix(in srgb, var(--a) 14%, var(--s1)), var(--s1) 60%); box-shadow: inset 0 0 0 1px var(--line); }
+.lyr-stage ul { list-style: none; display: grid; gap: .35rem; }
+.ln { display: block; width: 100%; text-align: left; font-family: var(--display); font-weight: 700; font-size: clamp(1.25rem, 2.6vw, 1.85rem); line-height: 1.3; letter-spacing: -0.02em; color: var(--dim); opacity: .55; padding: .35rem 0; transition: color .3s, opacity .3s, transform .3s; transform-origin: left center; }
+.ln.past { opacity: .35; }
+.ln.now { color: var(--ink); opacity: 1; transform: scale(1.03); }
+.ln .w { border-bottom: 2px dotted color-mix(in srgb, var(--a) 70%, transparent); cursor: help; }
+.ln .w:hover { color: var(--a); }
+.gloss { position: absolute; z-index: 5; background: var(--ink); color: #1b1030; padding: .55rem .9rem; border-radius: 14px; font-size: .95rem; font-weight: 600; white-space: nowrap; box-shadow: 0 14px 30px -10px rgba(0,0,0,.6); animation: swap .25s ease; pointer-events: none; }
+.gloss small { font-weight: 500; opacity: .65; margin-right: .5rem; }
+.lyr-hint { margin-top: 1.4rem; color: var(--dim); font-size: .88rem; }
+.lyr-side { display: grid; gap: 1.2rem; justify-items: center; }
+.card {
+  width: min(100%, 340px); aspect-ratio: 4 / 5; border-radius: 28px; padding: 1.7rem; display: flex; flex-direction: column; justify-content: space-between;
+  background: linear-gradient(150deg, var(--a), var(--b) 75%, var(--c)); color: #1b1030; transform: rotate(2.5deg);
+  box-shadow: 0 40px 60px -30px color-mix(in srgb, var(--b) 80%, transparent);
+}
+.card q { quotes: none; font-family: var(--display); font-weight: 800; font-size: 1.55rem; line-height: 1.2; letter-spacing: -0.02em; }
+.card footer { display: flex; align-items: center; justify-content: space-between; font-size: .85rem; font-weight: 600; }
+.card .mark { font-size: 1.5rem; --mk: rgba(27,16,48,.55); --mk3: #1b1030; }
+.side-note { color: var(--dim); font-size: .88rem; text-align: center; }
+
+.control-grid { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; }
+.zone-cover { position: relative; width: min(100%, 400px); aspect-ratio: 1; border-radius: var(--r-xl); overflow: hidden; background: linear-gradient(145deg, var(--a), var(--b) 68%, var(--c)); display: grid; grid-template-columns: 1fr 1.2fr 1fr; margin-inline: auto; box-shadow: 0 40px 70px -35px color-mix(in srgb, var(--a) 70%, transparent); }
+.zone-cover::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 20% 15%, rgba(255,255,255,.3), transparent 55%); pointer-events: none; }
+.zone { position: relative; display: grid; place-content: center; justify-items: center; gap: .35rem; padding: 1rem .5rem; color: #1b1030; text-align: center; font-weight: 700; font-size: .95rem; line-height: 1.25; transition: background .2s; }
+.zone + .zone { box-shadow: inset 1.5px 0 0 rgba(27,16,48,.22); }
+.zone:hover { background: rgba(255,255,255,.22); }
+.zone:active { background: rgba(255,255,255,.38); }
+.zone svg { width: 34px; height: 34px; }
+.zone small { font-weight: 500; font-size: .75rem; opacity: .75; }
+.zone-note { text-align: center; margin-top: 1rem; color: var(--mute); font-size: .92rem; min-height: 1.6em; font-variant-numeric: tabular-nums; }
+
+.lib-grid { display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr); gap: clamp(2rem, 5vw, 4rem); align-items: start; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+.lib-demo { border-radius: var(--r-xl); background: var(--s1); box-shadow: inset 0 0 0 1px var(--line); padding: 1.2rem; display: grid; gap: 1rem; }
+.pills { display: flex; flex-wrap: wrap; gap: .5rem; }
+.pills button { padding: .45rem 1rem; border-radius: 999px; background: var(--s3); color: var(--mute); font-weight: 600; font-size: .9rem; transition: background .2s, color .2s; }
+.pills button[aria-selected="true"] { background: linear-gradient(100deg, var(--a), var(--b)); color: #1b1030; }
+.rows { list-style: none; display: grid; gap: .3rem; min-height: 15.5rem; align-content: start; }
+.row { display: flex; align-items: center; gap: .9rem; padding: .55rem .6rem; border-radius: var(--r-s); animation: swap .35s ease both; }
+.row:hover { background: var(--s3); }
+.row .art { width: 46px; height: 46px; flex: none; border-radius: 13px; background: linear-gradient(140deg, var(--g1), var(--g2)); display: grid; place-items: center; color: rgba(14,12,20,.65); }
+.row .art svg { width: 22px; height: 22px; }
+.row b { display: block; font-weight: 600; font-size: .98rem; line-height: 1.3; }
+.row span { display: block; color: var(--dim); font-size: .82rem; }
+.row em { margin-left: auto; font-style: normal; font-size: .75rem; color: var(--dim); padding: .15rem .55rem; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); }
+.lib-intro { display: grid; gap: 1.1rem; }
+
+.sound-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+.eq { border-radius: var(--r-xl); background: var(--s1); box-shadow: inset 0 0 0 1px var(--line); padding: 1.5rem 1.5rem 1.2rem; display: grid; gap: 1.1rem; }
+.eq-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.eq-top h3 { font-size: 1.15rem; font-weight: 800; }
+.chip { padding: .4rem .95rem; border-radius: 999px; background: var(--s3); font-weight: 600; font-size: .88rem; color: var(--mute); transition: background .2s, color .2s; }
+.chip[aria-pressed="true"] { background: linear-gradient(100deg, var(--a), var(--b)); color: #1b1030; }
+.bands { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: .8rem; height: 200px; }
+.band { display: grid; grid-template-rows: auto 1fr auto; gap: .5rem; justify-items: center; }
+.band output { font-size: .75rem; color: var(--mute); font-variant-numeric: tabular-nums; }
+.band .track { width: 100%; max-width: 54px; position: relative; border-radius: 16px; background: var(--s3); overflow: hidden; cursor: ns-resize; touch-action: none; }
+.band .fill { position: absolute; left: 0; right: 0; bottom: 0; height: var(--v); background: linear-gradient(0deg, var(--a), var(--b)); border-radius: 16px; transition: height .12s ease; }
+.band label { font-size: .75rem; color: var(--dim); }
+.eq-hint { color: var(--dim); font-size: .85rem; text-align: center; }
+.stats { display: grid; gap: 1.4rem; }
+.stat { display: grid; grid-template-columns: minmax(8.5rem, auto) minmax(0,1fr); gap: 1.2rem; align-items: baseline; padding-bottom: 1.4rem; border-bottom: 1px solid var(--line); }
+.stat:last-child { border-bottom: 0; padding-bottom: 0; }
+.stat strong { font-family: var(--display); font-weight: 800; font-size: clamp(1.7rem, 3.4vw, 2.5rem); letter-spacing: -0.03em; line-height: 1.1; background: linear-gradient(100deg, var(--a), var(--b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stat h3 { font-size: 1.05rem; font-weight: 600; font-family: var(--body); letter-spacing: 0; }
+.stat p { color: var(--mute); font-size: .95rem; }
+
+.party { position: relative; border-radius: var(--r-xl); padding: clamp(1.8rem, 5vw, 4rem); background: linear-gradient(135deg, color-mix(in srgb, var(--b) 18%, var(--s1)), var(--s1) 55%, color-mix(in srgb, var(--c) 12%, var(--s1))); box-shadow: inset 0 0 0 1px var(--line); display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,.8fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+.party .head { margin-bottom: 2rem; }
+.steps { list-style: none; counter-reset: step; display: grid; gap: 1.4rem; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 2.6rem minmax(0,1fr); gap: 1rem; align-items: start; }
+.steps li::before { content: counter(step); width: 2.6rem; height: 2.6rem; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 800; background: linear-gradient(135deg, var(--a), var(--b)); color: #1b1030; }
+.steps h3 { font-family: var(--body); font-weight: 600; font-size: 1.08rem; letter-spacing: 0; line-height: 1.4; }
+.steps p { color: var(--mute); font-size: .96rem; }
+.qr { display: grid; justify-items: center; gap: .9rem; }
+.qr svg { width: min(100%, 250px); height: auto; padding: 16px; border-radius: 26px; background: var(--ink); box-shadow: 0 30px 50px -28px color-mix(in srgb, var(--b) 75%, transparent); }
+.qr small { color: var(--dim); font-size: .82rem; }
+
+.look-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+.look-ctl { display: grid; gap: 1.4rem; }
+.mini {
+  --m-bg: #0E0C14; --m-ink: #ECE6F5; --m-a: #C9B6FF; --m-b: #FFA6DA; --m-s: #191722; --m-dim: #938EA3;
+  width: min(100%, 340px); margin-inline: auto; border-radius: 34px; padding: 1.1rem; display: grid; gap: .8rem;
+  background: var(--m-bg); color: var(--m-ink); box-shadow: 0 0 0 1.5px var(--line), 0 40px 70px -35px color-mix(in srgb, var(--a) 60%, transparent);
+  transition: background .5s, color .5s;
+}
+.mini[data-t="light"] { --m-bg: #FBF8FF; --m-ink: #1C1A22; --m-a: #5B43B8; --m-b: #B0307F; --m-s: #F0ECF6; --m-dim: #7A7584; }
+.mini[data-t="amoled"] { --m-bg: #000; --m-s: #111116; }
+.mini-bar { display: flex; align-items: center; gap: .6rem; font-family: var(--display); font-weight: 800; font-size: 1.1rem; padding: .2rem .3rem; }
+.mini-bar .mark { font-size: 1.2rem; --mk: var(--m-a); --mk3: var(--m-b); }
+.mini-rows { display: grid; gap: .3rem; }
+.mini-row { display: flex; align-items: center; gap: .75rem; padding: .5rem; border-radius: 14px; background: var(--m-s); transition: background .5s; }
+.mini-row i { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(140deg, var(--m-a), var(--m-b)); flex: none; transition: background .5s; }
+.mini-row b { display: block; font-size: .88rem; font-weight: 600; line-height: 1.3; }
+.mini-row span { display: block; font-size: .72rem; color: var(--m-dim); }
+.mini-player { display: flex; align-items: center; gap: .75rem; padding: .6rem; border-radius: 22px; background: var(--m-s); position: relative; overflow: hidden; transition: background .5s; }
+.mini-player::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 46%; background: linear-gradient(90deg, var(--m-a), var(--m-b)); }
+.mini-player i { width: 42px; height: 42px; border-radius: 13px; background: linear-gradient(140deg, var(--m-a), var(--m-b)); flex: none; }
+.mini-player b { font-size: .9rem; font-weight: 600; }
+.mini-player span { display: block; font-size: .72rem; color: var(--m-dim); }
+.mini-player svg { width: 26px; height: 26px; margin-left: auto; color: var(--m-a); }
+.look-note { color: var(--dim); font-size: .85rem; }
+
+.dl { position: relative; border-radius: var(--r-xl); padding: clamp(2rem, 6vw, 5rem); text-align: center; overflow: hidden; background: radial-gradient(90% 120% at 15% 0%, color-mix(in srgb, var(--b) 30%, transparent), transparent 65%), radial-gradient(90% 120% at 90% 100%, color-mix(in srgb, var(--a) 30%, transparent), transparent 65%), var(--s1); box-shadow: inset 0 0 0 1px var(--line); display: grid; justify-items: center; gap: 1.6rem; }
+.dl .mark { font-size: 3.4rem; }
+.dl h2 { max-width: 16ch; }
+.dl .lead { margin-inline: auto; }
+.dl .meta { justify-content: center; }
+.dl-steps { margin-top: 1.4rem; text-align: left; max-width: 44rem; width: 100%; }
+
+.faq { max-width: 52rem; display: grid; }
+.faq details { border-top: 1px solid var(--line); }
+.faq details:last-child { border-bottom: 1px solid var(--line); }
+.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1.2rem; padding: 1.3rem 0; font-family: var(--display); font-weight: 600; font-size: 1.15rem; letter-spacing: -0.01em; }
+html[lang="bn"] .faq summary { letter-spacing: 0; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary { outline: none; border-radius: var(--r-s); }
+.faq summary::after {
+  content: "";
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  color: var(--mute);
+  background-color: var(--s2);
+  background-image:
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 14px 2px, 2px 14px;
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 6px 14px -8px rgba(0,0,0,.7);
+  transition: transform .45s cubic-bezier(.34,1.56,.64,1), background-color .3s, border-color .3s, color .3s, box-shadow .3s;
+}
+.faq summary:hover::after {
+  color: var(--a);
+  border-color: color-mix(in srgb, var(--a) 60%, var(--line));
+  background-color: color-mix(in srgb, var(--a) 10%, var(--s2));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 4px color-mix(in srgb, var(--a) 12%, transparent);
+}
+.faq summary:active::after { scale: .92; }
+.faq summary:focus-visible::after { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--a); }
+.faq details[open] summary::after {
+  transform: rotate(135deg);
+  color: #1b1030;
+  border-color: transparent;
+  background-color: var(--a);
+  background-image:
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor),
+    linear-gradient(135deg, var(--a), var(--b));
+  background-size: 14px 2px, 2px 14px, 100% 100%;
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--b) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.faq details p { color: var(--mute); padding: 0 3rem 1.4rem 0; max-width: 42rem; }
+
+footer.foot { padding: 3rem 0 4rem; border-top: 1px solid var(--line); }
+.foot .wrap { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between; align-items: flex-start; }
+.foot .brand { margin-bottom: .6rem; }
+.foot p { color: var(--dim); font-size: .92rem; max-width: 22rem; }
+.foot ul { list-style: none; display: grid; gap: .5rem; color: var(--mute); font-size: .95rem; }
+.foot ul a:hover { color: var(--a); }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 960px) {
+  .hero-grid, .lyrics-grid, .control-grid, .lib-grid, .sound-grid, .party, .look-grid { grid-template-columns: minmax(0,1fr); }
+  .nav nav { display: none; }
+  .hero-copy { justify-items: start; }
+  .stage { order: 2; }
+  .card { transform: none; }
+  .control-grid .zone-wrap { order: -1; }
+}
+@media (max-width: 520px) {
+  .wrap { width: calc(100% - 2rem); }
+  .nav .btn span { display: none; }
+  .nav .btn { padding: .55rem .8rem; }
+  .stat { grid-template-columns: minmax(0,1fr); gap: .3rem; }
+  .faq details p { padding-right: 0; }
+  .swatches button { width: 42px; height: 42px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+
+.hero { position: relative; overflow: clip; }
+.hero .wrap { position: relative; z-index: 1; }
+.nav { transition: box-shadow .3s, background .3s; }
+.nav.scrolled { box-shadow: 0 1px 0 var(--line), 0 18px 40px -24px rgba(0,0,0,.8); background: color-mix(in srgb, var(--bg) 86%, transparent); }
+.nav nav a { position: relative; padding: .3rem 0; transition: color .2s; }
+.nav nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--a), var(--b)); transform: scaleX(0); transform-origin: left; transition: transform .3s ease; }
+.nav nav a.on { color: var(--ink); }
+.nav nav a.on::after, .nav nav a:hover::after { transform: scaleX(1); }
+.btn { position: relative; overflow: hidden; isolation: isolate; }
+.btn::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%); transform: translateX(-120%); transition: transform .7s ease; }
+.btn:hover::after { transform: translateX(120%); }
+.btn.ghost::after { display: none; }
+.phone-wrap { position: relative; perspective: 1100px; width: min(310px, 100%); }
+.phone-wrap .phone { width: 100%; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .35s ease-out; transform-style: preserve-3d; position: relative; }
+.phone-wrap::before { content: ""; position: absolute; inset: -2px; border-radius: 48px; z-index: -1; background: conic-gradient(from var(--ang, 0deg), var(--a), var(--b), var(--c), var(--a)); filter: blur(22px); opacity: .55; animation: spin 9s linear infinite; }
+@property --ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes spin { to { --ang: 360deg; } }
+.chip-float { position: absolute; z-index: 3; display: inline-flex; align-items: center; gap: .5rem; padding: .55rem .95rem; border-radius: 999px; font-size: .85rem; font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--s2) 78%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px var(--line), 0 18px 36px -18px rgba(0,0,0,.8); white-space: nowrap; animation: bob 6s ease-in-out infinite alternate; }
+.chip-float svg { width: 18px; height: 18px; color: var(--a); }
+.chip-float.c1 { left: -4.2rem; top: 18%; }
+.chip-float.c2 { right: -4rem; top: 46%; animation-delay: -2s; }
+.chip-float.c3 { left: -3rem; bottom: 12%; animation-delay: -4s; }
+.chip-float.c3 svg { color: var(--b); }
+.chip-float.c2 svg { color: var(--c); }
+@keyframes bob { from { transform: translateY(-8px); } to { transform: translateY(10px); } }
+.ticker { overflow: hidden; border-block: 1px solid var(--line); background: color-mix(in srgb, var(--s1) 60%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.ticker-track { display: flex; width: max-content; animation: slide 38s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+.ticker-track span { display: inline-flex; align-items: center; gap: 1.6rem; padding: 1.05rem 0 1.05rem 1.6rem; font-family: var(--display); font-weight: 600; font-size: 1.05rem; color: var(--mute); white-space: nowrap; }
+.ticker-track span::after { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: linear-gradient(135deg, var(--a), var(--b)); }
+@keyframes slide { to { transform: translateX(-50%); } }
+.facts > div { position: relative; border: 0; padding: 1.35rem 1.4rem 1.4rem; border-radius: var(--r-m); background: color-mix(in srgb, var(--s1) 82%, transparent); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; transition: transform .3s ease, box-shadow .3s ease, opacity .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s), translate .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s); }
+.facts > div::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--a) 24%, transparent), transparent 70%); }
+.facts > div:hover { transform: translateY(-4px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--a) 55%, var(--line)); }
+.facts > div:hover::before { opacity: 1; }
+.facts dt, .facts dd { position: relative; }
+.facts dt { display: flex; align-items: center; gap: .6rem; }
+.facts dt::before { content: ""; flex: none; width: .55rem; height: .55rem; border-radius: 50%; background: linear-gradient(135deg, var(--a), var(--b)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--a) 20%, transparent); }
+.lyr-stage, .eq, .lib-demo, .mini, .dl, .party, .head, .lib-intro, .look-ctl, .zone-wrap, .lyr-side { transition: opacity .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s), translate .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s); }
+.card { transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+.card:hover { transform: rotate(0deg) translateY(-6px) scale(1.02); }
+.stat { transition: transform .3s ease, opacity .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s), translate .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s); }
+.stat:hover { transform: translateX(6px); }
+.party, .dl { position: relative; }
+.dl::before { content: ""; position: absolute; width: 140%; aspect-ratio: 1; left: -20%; top: -70%; background: conic-gradient(from var(--ang, 0deg), transparent, color-mix(in srgb, var(--a) 18%, transparent), transparent 30%, color-mix(in srgb, var(--b) 18%, transparent), transparent 60%); animation: spin 18s linear infinite; pointer-events: none; }
+.dl > * { position: relative; }
+.cover { animation: breathe 5s ease-in-out infinite alternate; }
+@keyframes breathe { from { box-shadow: 0 24px 40px -22px color-mix(in srgb, var(--b) 80%, transparent); } to { box-shadow: 0 30px 56px -18px color-mix(in srgb, var(--a) 95%, transparent); } }
+.faq details { transition: background .3s, opacity .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s), translate .8s cubic-bezier(.2,.7,.2,1) var(--rd,0s); }
+.faq details[open] { background: linear-gradient(90deg, color-mix(in srgb, var(--a) 7%, transparent), transparent); }
+.faq summary:hover { color: var(--a); }
+.swatches button { box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+.swatches button[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--bg), 0 0 0 4.5px var(--ink); }
+.sec + .sec { position: relative; }
+@media (max-width: 1100px) {
+  .chip-float.c1 { left: -1.2rem; }
+  .chip-float.c2 { right: -1.2rem; }
+  .chip-float.c3 { left: -.6rem; }
+}
+@media (max-width: 520px) {
+  .chip-float { font-size: .75rem; padding: .4rem .7rem; }
+  .chip-float.c1 { left: -.4rem; }
+  .chip-float.c2 { right: -.4rem; }
+  .chip-float.c3 { display: none; }
+  .facts > div { padding: 1.1rem 1.1rem 1.2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv { opacity: 1; translate: none; }
+  .ticker-track, .orb, .chip-float, .cover { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4.2" height="14" rx="1.4" fill="currentColor"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5.5v13M19 6.2v11.6a.6.6 0 0 1-.93.5L9.4 12.5a.6.6 0 0 1 0-1L18.07 5.7a.6.6 0 0 1 .93.5Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M18 5.5v13M5 6.2v11.6a.6.6 0 0 0 .93.5l8.67-5.8a.6.6 0 0 0 0-1L5.93 5.7A.6.6 0 0 0 5 6.2Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.7a4.3 4.3 0 0 1 7.5 2.6c0 5.6-7.5 10.2-7.5 10.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-lyrics" viewBox="0 0 24 24"><path d="M5 6.5h14M5 12h9M5 17.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.6A7.7 7.7 0 0 1 9.4 4.5a7.7 7.7 0 1 0 10.1 10.1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-speed" viewBox="0 0 24 24"><path d="M12 4.5a8.5 8.5 0 1 0 8.5 8.5M12 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M12 7V3.5L7 8l5 4.5V9a5 5 0 1 1-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-fwd" viewBox="0 0 24 24"><path d="M12 7V3.5L17 8l-5 4.5V9a5 5 0 1 0 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="19" r="1.9" fill="currentColor"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-lyricnote" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M4.5 7h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H10l-4.5 3.5V18h-1a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2ZM5.5 10.4h7v1.6h-7ZM5.5 13.6h4.5v1.6H5.5Z"/><path fill="currentColor" d="M20.4 3.2v6.9a2.3 2.3 0 1 1-1.6-2.2V2.2l3.6-.9v1.7Z"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 3.8a8.6 8.6 0 1 0 8.3 6.4M12.6 12.6l5-4.9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-moonfill" viewBox="0 0 24 24"><path d="M20.2 14.8A8.9 8.9 0 0 1 9.2 3.8a8.9 8.9 0 1 0 11 11Z" fill="currentColor"/></symbol>
+  <symbol id="i-eqbars" viewBox="0 0 24 24"><rect x="3.8" y="11" width="4.2" height="9" rx="1.6" fill="currentColor"/><rect x="9.9" y="4" width="4.2" height="16" rx="1.6" fill="currentColor"/><rect x="16" y="9" width="4.2" height="11" rx="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-queue" viewBox="0 0 24 24"><path d="M3.5 6h12.5M3.5 11h9M3.5 16h6M18.6 17.5V8.7l2.9 1" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.4" cy="17.6" r="2.4" fill="currentColor"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 17.5V6.5l9-2v11M9 17.5a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 9 17.5Zm9-2a2.5 2.5 0 1 1-2.5-2.5 2.5 2.5 0 0 1 2.5 2.5Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Sonora">
+      <span class="mark" data-mark aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      Sonora
+    </a>
+    <nav aria-label="Main">
+      <a href="#lyrics" data-i18n="navLyrics"></a>
+      <a href="#control" data-i18n="navControl"></a>
+      <a href="#library" data-i18n="navLibrary"></a>
+      <a href="#sound" data-i18n="navSound"></a>
+      <a href="#party" data-i18n="navParty"></a>
+      <a href="#faq" data-i18n="navFaq"></a>
+    </nav>
+    <div class="actions">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="bn" aria-pressed="true">বাং</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <a class="btn" href="#download" data-download><svg aria-hidden="true"><use href="#i-dl"/></svg><span data-i18n="dl"></span></a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <span class="orb o1" aria-hidden="true"></span><span class="orb o2" aria-hidden="true"></span><span class="orb o3" aria-hidden="true"></span>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="badge"><i></i><span data-i18n="badge"></span></p>
+        <h1 data-i18n="h1"></h1>
+        <p class="lead" data-i18n="heroLead"></p>
+        <div class="cta-row">
+          <a class="btn big" href="#download" data-download><svg aria-hidden="true"><use href="#i-dl"/></svg><span data-i18n="dlApk"></span></a>
+          <a class="btn big ghost" href="#lyrics" data-i18n="seeInside"></a>
+        </div>
+        <p class="meta">
+          <span><span data-i18n="version"></span> <b data-ver>1.0.0</b></span>
+          <span data-size-wrap hidden><b data-size></b></span>
+          <span data-i18n="android"></span>
+        </p>
+      </div>
+
+      <div class="stage">
+        <div class="phone-wrap" id="phoneWrap">
+        <span class="chip-float c1" aria-hidden="true"><svg><use href="#i-lyrics"/></svg><span data-i18n="chip1"></span></span>
+        <span class="chip-float c2" aria-hidden="true"><svg><use href="#i-moon"/></svg><span data-i18n="chip2"></span></span>
+        <span class="chip-float c3" aria-hidden="true"><svg><use href="#i-heart"/></svg><span data-i18n="chip3"></span></span>
+        <div class="phone" id="phone">
+          <div class="screen">
+            <div class="scr-top">
+              <span class="ico" aria-hidden="true"><svg><use href="#i-down"/></svg></span>
+              <div class="tinfo"><h3>Neon Rain</h3><p>Aria Vale</p></div>
+              <span class="ico more" aria-hidden="true"><svg><use href="#i-more"/></svg></span>
+            </div>
+            <div class="cover"><span class="mark" data-mark aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>
+            <button class="cur" type="button" id="curLine" aria-live="off"><span></span></button>
+            <div class="fav" aria-hidden="true"><svg><use href="#i-heart"/></svg></div>
+            <div class="wave" id="wave" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"></div>
+            <div class="times"><span id="tNow">0:00</span><span id="tEnd">0:32</span></div>
+            <div class="controls">
+              <span class="side" aria-hidden="true"><svg><use href="#i-shuffle"/></svg></span>
+              <button type="button" id="prev" aria-label="Previous"><svg><use href="#i-prev"/></svg></button>
+              <button type="button" id="play" class="play" aria-label="Pause"><svg><use href="#i-pause"/></svg></button>
+              <button type="button" id="next" aria-label="Next"><svg><use href="#i-next"/></svg></button>
+              <span class="side" aria-hidden="true"><svg><use href="#i-repeat"/></svg></span>
+            </div>
+            <div class="extras" aria-hidden="true">
+              <svg><use href="#i-lyricnote"/></svg><svg><use href="#i-gauge"/></svg><svg><use href="#i-moonfill"/></svg><svg><use href="#i-eqbars"/></svg><svg><use href="#i-queue"/></svg>
+            </div>
+          </div>
+        </div>
+        </div>
+        <div class="swatches" id="swatches" role="group" aria-label="Cover colors"></div>
+        <p class="hint" data-i18n="paletteHint"></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker"></div></div>
+
+  <section class="sec" id="lyrics">
+    <div class="wrap">
+      <div class="head">
+        <h2 data-i18n="lyH2"></h2>
+        <p class="lead" data-i18n="lyLead"></p>
+      </div>
+      <div class="lyrics-grid">
+        <div class="lyr-stage" id="lyrStage">
+          <ul id="lyrList"></ul>
+          <p class="lyr-hint" data-i18n="lyHint"></p>
+        </div>
+        <div class="lyr-side">
+          <div class="card" aria-hidden="true">
+            <q>Hold on, hold on, the night is wide. We'll chase the colors down the street.</q>
+            <footer><span>Neon Rain · Aria Vale</span><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></footer>
+          </div>
+          <p class="side-note" data-i18n="cardNote"></p>
+        </div>
+      </div>
+      <dl class="facts" data-list="lyricsFacts"></dl>
+    </div>
+  </section>
+
+  <section class="sec" id="control">
+    <div class="wrap">
+      <div class="control-grid">
+        <div class="zone-wrap">
+          <div class="zone-cover" id="zones">
+            <button type="button" class="zone" data-act="back"><svg aria-hidden="true"><use href="#i-back"/></svg><span data-i18n="zBack"></span><small data-i18n="zSub"></small></button>
+            <button type="button" class="zone" data-act="toggle"><svg aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="zToggle"></span><small data-i18n="zSubTap"></small></button>
+            <button type="button" class="zone" data-act="fwd"><svg aria-hidden="true"><use href="#i-fwd"/></svg><span data-i18n="zFwd"></span><small data-i18n="zSub"></small></button>
+          </div>
+          <p class="zone-note" id="zoneNote" aria-live="polite"></p>
+        </div>
+        <div>
+          <div class="head" style="margin-bottom:2rem">
+            <h2 data-i18n="ctH2"></h2>
+            <p class="lead" data-i18n="ctLead"></p>
+          </div>
+          <dl class="facts" data-list="controlFacts"></dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="library">
+    <div class="wrap">
+      <div class="lib-grid">
+        <div class="lib-intro">
+          <h2 data-i18n="liH2"></h2>
+          <p class="lead" data-i18n="liLead"></p>
+        </div>
+        <div class="lib-demo">
+          <div class="pills" role="tablist" id="pills">
+            <button type="button" role="tab" data-tab="songs" aria-selected="true" data-i18n="tSongs"></button>
+            <button type="button" role="tab" data-tab="albums" aria-selected="false" data-i18n="tAlbums"></button>
+            <button type="button" role="tab" data-tab="artists" aria-selected="false" data-i18n="tArtists"></button>
+            <button type="button" role="tab" data-tab="folders" aria-selected="false" data-i18n="tFolders"></button>
+          </div>
+          <ul class="rows" id="rows"></ul>
+        </div>
+      </div>
+      <dl class="facts" data-list="libraryFacts"></dl>
+    </div>
+  </section>
+
+  <section class="sec" id="sound">
+    <div class="wrap">
+      <div class="head">
+        <h2 data-i18n="soH2"></h2>
+        <p class="lead" data-i18n="soLead"></p>
+      </div>
+      <div class="sound-grid">
+        <div class="eq">
+          <div class="eq-top">
+            <h3 data-i18n="eqTitle"></h3>
+            <button type="button" class="chip" id="bass" aria-pressed="false" data-i18n="bass"></button>
+          </div>
+          <div class="bands" id="bands"></div>
+          <p class="eq-hint" data-i18n="eqHint"></p>
+        </div>
+        <div class="stats" data-stats></div>
+      </div>
+      <dl class="facts" data-list="soundFacts"></dl>
+    </div>
+  </section>
+
+  <section class="sec" id="party">
+    <div class="wrap">
+      <div class="party">
+        <div>
+          <div class="head">
+            <h2 data-i18n="paH2"></h2>
+            <p class="lead" data-i18n="paLead"></p>
+          </div>
+          <ol class="steps" data-steps="partySteps"></ol>
+        </div>
+        <div class="qr">
+          <svg id="qr" viewBox="0 0 25 25" role="img" aria-label="QR code illustration" shape-rendering="crispEdges"></svg>
+          <small data-i18n="qrNote"></small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="look">
+    <div class="wrap">
+      <div class="look-grid">
+        <div class="look-ctl">
+          <h2 data-i18n="loH2"></h2>
+          <p class="lead" data-i18n="loLead"></p>
+          <div class="pills" id="themeChips" role="group" aria-label="Theme">
+            <button type="button" class="chip" data-t="light" aria-pressed="false" data-i18n="thLight"></button>
+            <button type="button" class="chip" data-t="dark" aria-pressed="true" data-i18n="thDark"></button>
+            <button type="button" class="chip" data-t="amoled" aria-pressed="false">AMOLED</button>
+            <button type="button" class="chip" data-t="dynamic" aria-pressed="false" data-i18n="thDynamic"></button>
+          </div>
+          <p class="look-note" data-i18n="loNote"></p>
+        </div>
+        <div class="mini" id="mini" data-t="dark">
+          <div class="mini-bar"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>Sonora</div>
+          <div class="mini-rows">
+            <div class="mini-row"><i></i><div><b>Neon Rain</b><span>Aria Vale</span></div></div>
+            <div class="mini-row"><i></i><div><b>Paper Moons</b><span>Kite &amp; Co</span></div></div>
+            <div class="mini-row"><i></i><div><b>Slow Static</b><span>Nori Hale</span></div></div>
+          </div>
+          <div class="mini-player"><i></i><div><b>Glass Harbor</b><span>Aria Vale</span></div><svg aria-hidden="true"><use href="#i-pause"/></svg></div>
+        </div>
+      </div>
+      <div class="head" style="margin-bottom:2rem"><h2 style="font-size:clamp(1.6rem,3vw,2.3rem)" data-i18n="alsoH"></h2></div>
+      <dl class="facts" data-list="alsoFacts"></dl>
+    </div>
+  </section>
+
+  <section class="sec" id="download">
+    <div class="wrap">
+      <div class="dl">
+        <span class="mark dance" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <h2 data-i18n="dlH2"></h2>
+        <p class="lead" data-i18n="dlLead"></p>
+        <a class="btn big" href="#download" data-download><svg aria-hidden="true"><use href="#i-dl"/></svg><span data-i18n="dlApk"></span></a>
+        <p class="meta">
+          <span><span data-i18n="version"></span> <b data-ver>1.0.0</b></span>
+          <span data-size-wrap hidden><b data-size></b></span>
+          <span data-i18n="android"></span>
+        </p>
+        <ol class="steps dl-steps" data-steps="installSteps"></ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="faq" style="padding-top:0">
+    <div class="wrap">
+      <div class="head"><h2 data-i18n="faqH2"></h2></div>
+      <div class="faq" data-faq></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div>
+      <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>Sonora</div>
+      <p data-i18n="footBio"></p>
+    </div>
+    <ul>
+      <li><a href="mailto:in.with.imran@gmail.com">in.with.imran@gmail.com</a></li>
+      <li><a href="https://inwithimran.vercel.app" target="_blank" rel="noopener">inwithimran.vercel.app</a></li>
+      <li><a href="https://www.facebook.com/in.with.imran" target="_blank" rel="noopener">facebook.com/in.with.imran</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+const REPO = "YOUR_GITHUB_USERNAME/Sonora";
+
+const T = {
+  en: {
+    navLyrics: "Lyrics", navControl: "Controls", navLibrary: "Library", navSound: "Sound", navParty: "Party", navFaq: "FAQ",
+    dl: "Download", dlApk: "Download APK", seeInside: "See what's inside",
+    badge: "Free for Android",
+    h1: "Music that glows in the <span class=\"grad\">colors of the song.</span>",
+    chip1: "Synced lyrics", chip2: "Sleep timer", chip3: "Cover colors",
+    ticker: ["Synced lyrics", "Word meanings", "Cover-art colors", "Party mode", "Equalizer", "Lyrics cards", "Sleep timer", "Home widget", "Backup & restore", "Free forever"],
+    heroLead: "Sonora plays the songs already on your phone, finds synced lyrics for them, and paints every screen in the colors of the cover art.",
+    version: "Version", android: "Android 8.0 or newer",
+    paletteHint: "Tap a cover to recolor this whole page, just like Sonora does for every song.",
+    lyH2: "Sing along. Know every word.",
+    lyLead: "Sonora finds synced lyrics on its own. Tap a line to jump there, or tap a word to see what it means.",
+    lyHint: "Try it: tap a line to seek, tap an underlined word for its meaning. In the app, long-press a word.",
+    cardNote: "A lyrics card, ready to share.",
+    ctH2: "Your thumb is the remote.",
+    ctLead: "Everything you need sits on the cover art. Try the zones, they control the player at the top.",
+    zBack: "Back 10 s", zToggle: "Play / pause", zFwd: "Forward 10 s", zSub: "Double-tap in the app", zSubTap: "Tap",
+    liH2: "Find any song in a moment.",
+    liLead: "Browse four ways, search instantly, and keep your place wherever you go.",
+    tSongs: "Songs", tAlbums: "Albums", tArtists: "Artists", tFolders: "Folders",
+    soH2: "Make it sound right.",
+    soLead: "Shape the sound with the equalizer, then let Sonora handle the rest.",
+    eqTitle: "Equalizer", bass: "Bass boost", eqHint: "Drag the bars to shape the sound.",
+    paH2: "Everyone picks the next song.",
+    paLead: "Start a party and friends on your Wi-Fi or hotspot join from their own phones. They only scan a QR code. No app and no internet needed.",
+    qrNote: "Illustration, not a real code",
+    loH2: "Looks the way you chose.",
+    loLead: "Light, dark or AMOLED black. Or let Sonora match your wallpaper with dynamic colors.",
+    thLight: "Light", thDark: "Dark", thDynamic: "Dynamic",
+    loNote: "Dynamic colors work on Android 12 and newer.",
+    alsoH: "Also inside",
+    dlH2: "Get Sonora. It's free.",
+    dlLead: "Download the APK and install it in a minute.",
+    faqH2: "Questions, answered",
+    footBio: "Built with care for people who love their music. Made by Imora Studio.",
+    stats: [
+      ["0.5×–2×", "Playback speed", "Right from the player."],
+      ["2–8 s", "Fade between songs", "Fade out the end of a song and fade in the next."],
+      ["5–60 min", "Sleep timer", "Tap the moon. The countdown shows on the icon and playback stops at zero."]
+    ],
+    lists: {
+      lyricsFacts: [
+        ["Found automatically", "Synced lyrics appear for your songs on their own. Wrong match? Search again or import your own .lrc file."],
+        ["Word meanings", "Long-press any word for its Bengali or English meaning, or translate the whole line."],
+        ["Lyrics cards", "Pick up to 6 lines and share them as an image card in the cover's colors. Four styles, three sizes."],
+        ["Full-screen stage", "Big text, drifting snow and the cover's colors in landscape. The screen stays awake, and a lock stops stray touches."],
+        ["On your lock screen", "The current line shows in the notification, so you can follow along without opening the app."],
+        ["Tidy song names", "Messy file names are cleaned before searching, and a good match can fill in the real title and artist."]
+      ],
+      controlFacts: [
+        ["Swipe the cover", "Left for the next song, right for the previous one. Long-press to pick new artwork."],
+        ["Swipe the mini player", "It lives at the bottom of every screen. Swipe to change songs, tap to open the full player."],
+        ["Waveform seek bar", "Drag along the waves to jump anywhere in a song."],
+        ["Your skip interval", "Choose 5, 10, 15 or 30 seconds in Settings."],
+        ["Controls everywhere", "Notification, lock screen and Bluetooth buttons work. Your volume keys show Sonora's own volume bar."],
+        ["Home-screen widget", "Cover, song name, and play, previous and next buttons, right on your home screen."]
+      ],
+      libraryFacts: [
+        ["Instant search", "Type a song, album or artist in the Search tab."],
+        ["Sort and shuffle", "Change the order, or shuffle everything with one tap."],
+        ["Select many songs", "Long-press a song, then queue, add to a playlist or delete them together."],
+        ["Song menu", "Play next, queue, favorite, share, edit info, change the cover, or jump to the album or artist."],
+        ["Favorites and playlists", "Tap the heart under the cover. Create playlists from any menu."],
+        ["A queue you control", "Reorder by dragging, remove songs, or save the whole queue as a playlist."],
+        ["Smart lists", "Recently added and Most played build themselves."],
+        ["Pick up where you left off", "Your queue and position come back when you reopen Sonora."],
+        ["Hide folders", "Keep voice notes out of your library, and bring them back anytime in Settings."],
+        ["Missing details, fixed", "Find cover art online, identify unknown songs by sound, and edit titles and artists. Your audio files are never modified."]
+      ],
+      soundFacts: [
+        ["Equalizer and bass boost", "Presets, individual bands and extra low end."],
+        ["Volume leveling", "Keeps loud and quiet songs at a similar level."],
+        ["Skip silence", "Jumps over silent gaps inside songs."]
+      ],
+      alsoFacts: [
+        ["Backup and restore", "Move favorites, playlists, play counts, song edits and settings to a new phone."],
+        ["Online lookups are optional", "Lyrics and covers come from lrclib.net, iTunes and Deezer. Turn them off anytime."],
+        ["Hide short clips", "Audio under 30 seconds stays out of your library. Switch it off in Settings."],
+        ["Your files stay untouched", "Edits live inside Sonora. The audio files are never modified."],
+        ["Check for updates", "Settings has an update check, so you always know when a new version is ready."],
+        ["Replay the tour", "Want the one-minute introduction again? Open App tour in Settings."]
+      ]
+    },
+    steps: {
+      partySteps: [
+        ["Start the party", "Open Party mode in Sonora and tap Start party."],
+        ["Share the code", "Friends scan the QR code with their phone camera, or open the shared link."],
+        ["Request and vote", "They request songs and vote. A song with 2 or more votes jumps ahead in the queue."]
+      ],
+      installSteps: [
+        ["Download", "Tap the button and save the APK file."],
+        ["Install", "Open the file. If Android asks, allow installs from your browser or Files app. Android asks this for every app that doesn't come from the Play Store."],
+        ["Open and allow", "Allow access to your music and notifications, then take the one-minute tour."]
+      ]
+    },
+    faq: [
+      ["Is Sonora really free?", "Yes. Downloading and using Sonora costs nothing."],
+      ["Do I need internet?", "Not to play your music. The internet is only used for optional lookups: lyrics from lrclib.net, covers from iTunes and Deezer, and song identification through AcoustID. Turn lookups off anytime in Settings."],
+      ["Will it change my music files?", "No. Edited titles and artists are saved inside Sonora, and your audio files are never modified."],
+      ["Which Android versions work?", "Android 8.0 and newer."],
+      ["How do I move to a new phone?", "Use Back up data in Settings, then Restore data on the new phone. Favorites, playlists, play counts, song edits and settings come along."],
+      ["How do I update?", "Use Check for updates in Settings, or download the latest APK from this page."],
+      ["Do my friends need the app for Party mode?", "No. They scan a QR code with their phone camera while on the same Wi-Fi or hotspot."]
+    ],
+    zoneToggleOn: "Playing", zoneTogglePause: "Paused", zoneBack: "−10 s", zoneFwd: "+10 s"
+  },
+  bn: {
+    navLyrics: "লিরিক্স", navControl: "কন্ট্রোল", navLibrary: "লাইব্রেরি", navSound: "সাউন্ড", navParty: "পার্টি", navFaq: "প্রশ্নোত্তর",
+    dl: "ডাউনলোড", dlApk: "APK ডাউনলোড করুন", seeInside: "ভেতরে কী আছে দেখুন",
+    badge: "অ্যান্ড্রয়েডে ফ্রি",
+    h1: "গানের রঙে <span class=\"grad\">ঝলমল করে ওঠে</span> আপনার মিউজিক।",
+    chip1: "সিঙ্ক লিরিক্স", chip2: "স্লিপ টাইমার", chip3: "কভারের রঙ",
+    ticker: ["সিঙ্ক লিরিক্স", "শব্দের অর্থ", "কভারের রঙ", "পার্টি মোড", "ইকুয়ালাইজার", "লিরিক্স কার্ড", "স্লিপ টাইমার", "হোম উইজেট", "ব্যাকআপ ও রিস্টোর", "চিরকাল ফ্রি"],
+    heroLead: "Sonora আপনার ফোনের গানগুলোই বাজায়, সেগুলোর জন্য সিঙ্ক করা লিরিক্স খুঁজে আনে, আর কভার আর্টের রঙে পুরো স্ক্রিন সাজিয়ে তোলে।",
+    version: "ভার্সন", android: "অ্যান্ড্রয়েড ৮.০ বা নতুন",
+    paletteHint: "একটি কভারে ট্যাপ করুন, পুরো পেজের রঙ বদলে যাবে। Sonora প্রতিটি গানের জন্য ঠিক এভাবেই করে।",
+    lyH2: "সাথে গান গাইুন। প্রতিটি শব্দের মানে জানুন।",
+    lyLead: "Sonora নিজেই সিঙ্ক করা লিরিক্স খুঁজে আনে। যেকোনো লাইনে ট্যাপ করলে গান সেখানে চলে যায়, আর শব্দে ট্যাপ করলে অর্থ দেখা যায়।",
+    lyHint: "চেষ্টা করে দেখুন: লাইনে ট্যাপ করলে গান সেখানে যাবে, দাগ দেওয়া শব্দে ট্যাপ করলে অর্থ দেখাবে। অ্যাপে শব্দটি চেপে ধরতে হয়।",
+    cardNote: "শেয়ার করার জন্য তৈরি একটি লিরিক্স কার্ড।",
+    ctH2: "আপনার বুড়ো আঙুলই রিমোট।",
+    ctLead: "দরকারি সবকিছু কভার আর্টের ওপরেই। নিচের জোনগুলোতে ট্যাপ করে দেখুন, ওপরের প্লেয়ার চলবে।",
+    zBack: "১০ সেকেন্ড পেছনে", zToggle: "প্লে / পজ", zFwd: "১০ সেকেন্ড সামনে", zSub: "অ্যাপে ডাবল ট্যাপ", zSubTap: "ট্যাপ",
+    liH2: "যেকোনো গান নিমেষেই খুঁজে নিন।",
+    liLead: "চার ভাবে ব্রাউজ করুন, সাথে সাথে সার্চ করুন, আর যেখানেই যান আপনার জায়গা মনে থাকবে।",
+    tSongs: "গান", tAlbums: "অ্যালবাম", tArtists: "শিল্পী", tFolders: "ফোল্ডার",
+    soH2: "সুর ঠিক আপনার মতো করে নিন।",
+    soLead: "ইকুয়ালাইজারে সাউন্ড সাজান, বাকিটা Sonora সামলে নেবে।",
+    eqTitle: "ইকুয়ালাইজার", bass: "বাস বুস্ট", eqHint: "বারগুলো টেনে সাউন্ড সাজান।",
+    paH2: "পরের গানটা বাছবে সবাই মিলে।",
+    paLead: "পার্টি শুরু করুন, আপনার ওয়াই-ফাই বা হটস্পটে থাকা বন্ধুরা নিজের ফোন থেকেই যোগ দেবে। শুধু QR কোড স্ক্যান করতে হবে। কোনো অ্যাপ বা ইন্টারনেট লাগবে না।",
+    qrNote: "চিত্র মাত্র, আসল কোড নয়",
+    loH2: "দেখতে ঠিক আপনার পছন্দমতো।",
+    loLead: "লাইট, ডার্ক বা AMOLED কালো। অথবা ডাইনামিক কালারে ওয়ালপেপারের সাথে মিলিয়ে নিন।",
+    thLight: "লাইট", thDark: "ডার্ক", thDynamic: "ডাইনামিক",
+    loNote: "ডাইনামিক কালার অ্যান্ড্রয়েড ১২ ও তার নতুন ভার্সনে কাজ করে।",
+    alsoH: "আরও যা আছে",
+    dlH2: "Sonora নিন। একদম ফ্রি।",
+    dlLead: "APK ডাউনলোড করে এক মিনিটেই ইনস্টল করুন।",
+    faqH2: "প্রশ্ন ও উত্তর",
+    footBio: "যারা গান ভালোবাসেন তাদের জন্য যত্ন করে বানানো। তৈরি করেছে Imora Studio।",
+    stats: [
+      ["0.5×–2×", "প্লেব্যাক স্পিড", "সরাসরি প্লেয়ার থেকেই।"],
+      ["২–৮ সেকেন্ড", "গানের মাঝে ফেড", "গানের শেষ ধীরে মিলিয়ে যায়, পরের গান ধীরে শুরু হয়।"],
+      ["৫–৬০ মিনিট", "স্লিপ টাইমার", "চাঁদ আইকনে ট্যাপ করুন। কাউন্টডাউন আইকনেই দেখা যায়, শূন্য হলে গান থেমে যায়।"]
+    ],
+    lists: {
+      lyricsFacts: [
+        ["নিজে থেকেই খুঁজে আনে", "গানের জন্য সিঙ্ক করা লিরিক্স আপনাআপনি চলে আসে। ভুল লিরিক্স এলে আবার খুঁজুন, অথবা নিজের .lrc ফাইল ইমপোর্ট করুন।"],
+        ["শব্দের অর্থ", "যেকোনো শব্দ চেপে ধরলে বাংলা বা ইংরেজি অর্থ দেখা যায়, চাইলে পুরো লাইনের অনুবাদও পাবেন।"],
+        ["লিরিক্স কার্ড", "সর্বোচ্চ ৬টি লাইন বেছে কভারের রঙে ইমেজ কার্ড বানিয়ে শেয়ার করুন। চারটি স্টাইল, তিনটি সাইজ।"],
+        ["ফুল-স্ক্রিন মঞ্চ", "ল্যান্ডস্কেপে বড় লেখা, ঝরে পড়া তুষার আর কভারের রঙ। স্ক্রিন জেগে থাকে, আর লক দিলে ভুল টাচে কিছু হয় না।"],
+        ["লক স্ক্রিনেও", "বর্তমান লাইনটি নোটিফিকেশনে দেখা যায়, অ্যাপ না খুলেই সাথে পড়তে পারবেন।"],
+        ["গোছানো গানের নাম", "এলোমেলো ফাইলের নাম খোঁজার আগে পরিষ্কার করা হয়, আর ভালো মিল পেলে আসল নাম ও শিল্পী বসে যায়।"]
+      ],
+      controlFacts: [
+        ["কভারে সোয়াইপ", "বাঁয়ে সোয়াইপে পরের গান, ডানে সোয়াইপে আগের গান। চেপে ধরলে নতুন আর্টওয়ার্ক বাছতে পারবেন।"],
+        ["মিনি প্লেয়ারে সোয়াইপ", "এটি প্রতিটি স্ক্রিনের নিচে থাকে। সোয়াইপ করে গান বদলান, ট্যাপ করে পুরো প্লেয়ার খুলুন।"],
+        ["ওয়েভফর্ম সিক বার", "তরঙ্গের ওপর আঙুল টেনে গানের যেকোনো জায়গায় চলে যান।"],
+        ["নিজের পছন্দের স্কিপ", "সেটিংসে ৫, ১০, ১৫ বা ৩০ সেকেন্ড বেছে নিন।"],
+        ["সবখানে কন্ট্রোল", "নোটিফিকেশন, লক স্ক্রিন ও ব্লুটুথের বোতাম কাজ করে। ভলিউম কী চাপলে Sonora-র নিজস্ব ভলিউম বার দেখা যায়।"],
+        ["হোম-স্ক্রিন উইজেট", "কভার, গানের নাম, আর প্লে, আগের ও পরের বোতাম সরাসরি হোম স্ক্রিনে।"]
+      ],
+      libraryFacts: [
+        ["তাৎক্ষণিক সার্চ", "সার্চ ট্যাবে গান, অ্যালবাম বা শিল্পীর নাম লিখুন।"],
+        ["সাজান ও শাফল করুন", "ক্রম বদলান, অথবা এক ট্যাপে সব গান শাফল করুন।"],
+        ["একসাথে অনেক গান বাছুন", "একটি গান চেপে ধরে আরও বাছুন, তারপর একসাথে কিউতে দিন, প্লেলিস্টে যোগ করুন বা মুছে ফেলুন।"],
+        ["গানের মেনু", "পরে বাজান, কিউতে দিন, ফেভারিট করুন, শেয়ার করুন, তথ্য বদলান, কভার বদলান, অথবা অ্যালবাম বা শিল্পীর পেজে যান।"],
+        ["ফেভারিট ও প্লেলিস্ট", "কভারের নিচের হার্টে ট্যাপ করুন। যেকোনো মেনু থেকে প্লেলিস্ট বানান।"],
+        ["আপনার হাতে কিউ", "টেনে ক্রম বদলান, গান সরিয়ে দিন, অথবা পুরো কিউটাই প্লেলিস্ট হিসেবে সেভ করুন।"],
+        ["স্মার্ট লিস্ট", "সম্প্রতি যোগ করা ও সবচেয়ে বেশি শোনা গান নিজে থেকেই সাজানো হয়।"],
+        ["যেখানে থেমেছিলেন সেখান থেকেই", "Sonora আবার খুললে আপনার কিউ ও গানের অবস্থান ফিরে আসে।"],
+        ["ফোল্ডার লুকান", "ভয়েস নোট লাইব্রেরির বাইরে রাখুন, দরকার হলে সেটিংস থেকে ফিরিয়ে আনুন।"],
+        ["অসম্পূর্ণ তথ্য ঠিক করুন", "অনলাইনে কভার আর্ট খুঁজুন, অচেনা গান সুর শুনে চিনুন, আর নাম ও শিল্পী বদলান। আপনার অডিও ফাইল কখনো বদলায় না।"]
+      ],
+      soundFacts: [
+        ["ইকুয়ালাইজার ও বাস বুস্ট", "প্রিসেট, আলাদা আলাদা ব্যান্ড আর বাড়তি বেস।"],
+        ["ভলিউম লেভেলিং", "জোরে আর আস্তে বাজা গানকে প্রায় একই মাত্রায় রাখে।"],
+        ["নীরবতা এড়িয়ে যান", "গানের ভেতরের ফাঁকা অংশ লাফিয়ে পার হয়ে যায়।"]
+      ],
+      alsoFacts: [
+        ["ব্যাকআপ ও রিস্টোর", "ফেভারিট, প্লেলিস্ট, প্লে কাউন্ট, গানের এডিট ও সেটিংস নতুন ফোনে নিয়ে যান।"],
+        ["অনলাইন খোঁজা ঐচ্ছিক", "লিরিক্স ও কভার আসে lrclib.net, iTunes ও Deezer থেকে। যখন খুশি বন্ধ করে দিন।"],
+        ["ছোট ক্লিপ লুকান", "৩০ সেকেন্ডের চেয়ে ছোট অডিও লাইব্রেরির বাইরে থাকে। চাইলে সেটিংসে বন্ধ করুন।"],
+        ["আপনার ফাইল অক্ষত থাকে", "এডিটগুলো Sonora-র ভেতরেই থাকে। অডিও ফাইল কখনো বদলায় না।"],
+        ["আপডেট চেক", "সেটিংসে আপডেট চেক আছে, তাই নতুন ভার্সন এলে সহজেই জানতে পারবেন।"],
+        ["ট্যুর আবার দেখুন", "এক মিনিটের পরিচিতি আবার দেখতে চান? সেটিংসে অ্যাপ ট্যুর খুলুন।"]
+      ]
+    },
+    steps: {
+      partySteps: [
+        ["পার্টি শুরু করুন", "Sonora-তে পার্টি মোড খুলে Start party-তে ট্যাপ করুন।"],
+        ["কোড শেয়ার করুন", "বন্ধুরা ফোনের ক্যামেরায় QR কোড স্ক্যান করবে, অথবা শেয়ার করা লিংক খুলবে।"],
+        ["রিকোয়েস্ট ও ভোট", "তারা গান রিকোয়েস্ট করবে ও ভোট দেবে। ২ বা তার বেশি ভোট পেলে গান কিউয়ে এগিয়ে যায়।"]
+      ],
+      installSteps: [
+        ["ডাউনলোড", "বোতামে ট্যাপ করে APK ফাইলটি সেভ করুন।"],
+        ["ইনস্টল", "ফাইলটি খুলুন। অ্যান্ড্রয়েড অনুমতি চাইলে আপনার ব্রাউজার বা ফাইলস অ্যাপ থেকে ইনস্টলের অনুমতি দিন। প্লে স্টোরের বাইরের যেকোনো অ্যাপের জন্যই অ্যান্ড্রয়েড এটি জিজ্ঞেস করে।"],
+        ["খুলুন ও অনুমতি দিন", "মিউজিক ও নোটিফিকেশনের অনুমতি দিন, তারপর এক মিনিটের ট্যুরটি দেখে নিন।"]
+      ]
+    },
+    faq: [
+      ["Sonora কি সত্যিই ফ্রি?", "হ্যাঁ। Sonora ডাউনলোড ও ব্যবহারে কোনো খরচ নেই।"],
+      ["ইন্টারনেট লাগে কি?", "গান শুনতে লাগে না। ইন্টারনেট শুধু ঐচ্ছিক খোঁজাখুঁজিতে ব্যবহার হয়: lrclib.net থেকে লিরিক্স, iTunes ও Deezer থেকে কভার, আর AcoustID দিয়ে গান চেনা। সেটিংস থেকে যখন খুশি এগুলো বন্ধ করতে পারবেন।"],
+      ["আমার গানের ফাইল কি বদলে যাবে?", "না। বদলানো নাম ও শিল্পী Sonora-র ভেতরেই সেভ থাকে, আপনার অডিও ফাইল কখনো বদলায় না।"],
+      ["কোন অ্যান্ড্রয়েড ভার্সনে চলে?", "অ্যান্ড্রয়েড ৮.০ ও তার নতুন ভার্সনে।"],
+      ["নতুন ফোনে কীভাবে নেব?", "সেটিংসে Back up data ব্যবহার করুন, তারপর নতুন ফোনে Restore data দিন। ফেভারিট, প্লেলিস্ট, প্লে কাউন্ট, গানের এডিট ও সেটিংস সাথে চলে আসবে।"],
+      ["কীভাবে আপডেট করব?", "সেটিংসে Check for updates ব্যবহার করুন, অথবা এই পেজ থেকে সর্বশেষ APK ডাউনলোড করুন।"],
+      ["পার্টি মোডে বন্ধুদের কি অ্যাপ লাগবে?", "না। একই ওয়াই-ফাই বা হটস্পটে থেকে ফোনের ক্যামেরায় QR কোড স্ক্যান করলেই হবে।"]
+    ],
+    zoneToggleOn: "বাজছে", zoneTogglePause: "থেমে আছে", zoneBack: "−১০ সেকেন্ড", zoneFwd: "+১০ সেকেন্ড"
+  }
+};
+
+const LINES = [
+  "The city lights are fading slow",
+  "and every window hums a song",
+  "I trace your name on the glass below",
+  "where the rain keeps singing along",
+  "Hold on, hold on, the night is wide",
+  "we'll chase the colors down the street",
+  "and if the morning comes outside",
+  "we'll keep this rhythm in our feet"
+];
+
+const GLOSS = {
+  lights: "আলো", fading: "ম্লান হয়ে আসা", slow: "ধীরে", window: "জানালা", song: "গান",
+  glass: "কাচ", rain: "বৃষ্টি", singing: "গান গাওয়া", night: "রাত", wide: "বিস্তৃত",
+  colors: "রং", street: "রাস্তা", morning: "সকাল", rhythm: "ছন্দ", city: "শহর", chase: "পিছু ছোটা"
+};
+
+const PALETTES = {
+  dusk: { name: "Dusk", a: "#C9B6FF", b: "#FFA6DA", c: "#8FE0D0" },
+  tide: { name: "Tide", a: "#8FD3FF", b: "#8FE0D0", c: "#C9B6FF" },
+  ember: { name: "Ember", a: "#FFB68A", b: "#FF8FA3", c: "#FFE08A" },
+  moss: { name: "Moss", a: "#B9E58A", b: "#8FE0D0", c: "#FFE08A" }
+};
+
+const LIB = {
+  songs: [
+    ["Neon Rain", "Aria Vale", "#C9B6FF", "#FFA6DA", "note"],
+    ["Paper Moons", "Kite & Co", "#8FD3FF", "#8FE0D0", "note"],
+    ["Slow Static", "Nori Hale", "#FFB68A", "#FF8FA3", "note"],
+    ["Glass Harbor", "Aria Vale", "#B9E58A", "#8FE0D0", "note"],
+    ["Low Tide Letters", "Kite & Co", "#C9B6FF", "#8FD3FF", "note"]
+  ],
+  albums: [
+    ["Midnight Signals", "Aria Vale · 11 songs", "#C9B6FF", "#FFA6DA", "note"],
+    ["Paper Moons", "Kite & Co · 9 songs", "#8FD3FF", "#8FE0D0", "note"],
+    ["Glass Harbor EP", "Aria Vale · 4 songs", "#B9E58A", "#8FE0D0", "note"],
+    ["Static Summer", "Nori Hale · 12 songs", "#FFB68A", "#FF8FA3", "note"]
+  ],
+  artists: [
+    ["Aria Vale", "15 songs", "#C9B6FF", "#FFA6DA", "note"],
+    ["Kite & Co", "14 songs", "#8FD3FF", "#8FE0D0", "note"],
+    ["Nori Hale", "12 songs", "#FFB68A", "#FF8FA3", "note"]
+  ],
+  folders: [
+    ["Music", "128 songs", "#C9B6FF", "#8FD3FF", "folder"],
+    ["Download", "23 songs", "#FFB68A", "#FFE08A", "folder"],
+    ["Bluetooth", "7 songs", "#8FE0D0", "#B9E58A", "folder"],
+    ["Voice Notes", "41 clips", "#3A3649", "#2A2737", "folder", "hidden"]
+  ]
+};
+
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STEP = 4;
+const DURATION = LINES.length * STEP;
+const BARS = 56;
+const state = { t: 0, playing: !reduce, lang: "bn" };
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const fmt = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+const lineIndex = () => Math.min(LINES.length - 1, Math.floor(state.t / STEP));
+
+function setLang(l) {
+  state.lang = l;
+  const d = T[l];
+  document.documentElement.lang = l;
+  $$("[data-i18n]").forEach(el => { el.innerHTML = d[el.dataset.i18n]; });
+  $$("[data-list]").forEach(el => {
+    el.innerHTML = d.lists[el.dataset.list].map(([t, p]) => `<div><dt>${t}</dt><dd>${p}</dd></div>`).join("");
+  });
+  $$("[data-steps]").forEach(el => {
+    el.innerHTML = d.steps[el.dataset.steps].map(([t, p]) => `<li><div><h3>${t}</h3><p>${p}</p></div></li>`).join("");
+  });
+  $$("[data-faq]").forEach(el => {
+    el.innerHTML = d.faq.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("");
+  });
+  $$("[data-stats]").forEach(el => {
+    el.innerHTML = d.stats.map(([v, t, p]) => `<div class="stat"><strong>${v}</strong><div><h3>${t}</h3><p>${p}</p></div></div>`).join("");
+  });
+  const tk = $("#ticker");
+  if (tk) {
+    const set = d.ticker.map(x => `<span>${x}</span>`).join("");
+    tk.innerHTML = set + set;
+  }
+  $$("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === l)));
+  watchReveal();
+  try { localStorage.setItem("sonora-lang", l); } catch (e) {}
+  zoneNote("");
+}
+
+async function resolveRelease() {
+  const fallback = `https://github.com/${REPO}/releases/latest`;
+  $$("[data-download]").forEach(a => { a.href = fallback; a.rel = "noopener"; });
+  if (REPO.startsWith("YOUR_")) return;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: "application/vnd.github+json" } });
+    if (!res.ok) throw new Error("release");
+    const data = await res.json();
+    const apk = (data.assets || []).find(a => /\.apk$/i.test(a.name));
+    if (apk) {
+      $$("[data-download]").forEach(a => { a.href = apk.browser_download_url; });
+      const mb = (apk.size / 1048576).toFixed(1) + " MB";
+      $$("[data-size]").forEach(el => { el.textContent = mb; });
+      $$("[data-size-wrap]").forEach(el => { el.hidden = false; });
+    }
+    const v = (data.tag_name || "").replace(/^v/i, "");
+    if (v) $$("[data-ver]").forEach(el => { el.textContent = v; });
+  } catch (e) {}
+}
+
+function buildWave() {
+  const wave = $("#wave");
+  wave.innerHTML = Array.from({ length: BARS }, (_, i) => {
+    const h = 0.22 + 0.78 * Math.abs(Math.sin(i * 0.55) * Math.cos(i * 0.17 + 1));
+    return `<i style="--h:${h.toFixed(2)}"></i>`;
+  }).join("");
+  const seek = e => {
+    const r = wave.getBoundingClientRect();
+    const p = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    state.t = p * DURATION * 0.999;
+    render();
+  };
+  let down = false;
+  wave.addEventListener("pointerdown", e => { down = true; wave.setPointerCapture(e.pointerId); seek(e); });
+  wave.addEventListener("pointermove", e => { if (down) seek(e); });
+  wave.addEventListener("pointerup", () => { down = false; });
+  wave.addEventListener("pointercancel", () => { down = false; });
+  wave.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight") { state.t = Math.min(DURATION - 0.1, state.t + 3); render(); }
+    if (e.key === "ArrowLeft") { state.t = Math.max(0, state.t - 3); render(); }
+  });
+}
+
+function buildLyrics() {
+  const list = $("#lyrList");
+  list.innerHTML = LINES.map((line, i) => {
+    const words = line.split(" ").map(w => {
+      const key = w.toLowerCase().replace(/[^a-z]/g, "");
+      return GLOSS[key] ? `<span class="w" data-g="${key}" data-raw="${w.replace(/[^A-Za-z']/g, "")}">${w}</span>` : w;
+    }).join(" ");
+    return `<li><button type="button" class="ln" data-i="${i}">${words}</button></li>`;
+  }).join("");
+  const stage = $("#lyrStage");
+  let gloss = null;
+  const clear = () => { if (gloss) { gloss.remove(); gloss = null; } };
+  list.addEventListener("click", e => {
+    const w = e.target.closest(".w");
+    if (w) {
+      e.stopPropagation();
+      clear();
+      gloss = document.createElement("div");
+      gloss.className = "gloss";
+      gloss.innerHTML = `<small>${w.dataset.raw}</small>${GLOSS[w.dataset.g]}`;
+      stage.appendChild(gloss);
+      const sr = stage.getBoundingClientRect();
+      const wr = w.getBoundingClientRect();
+      const gw = gloss.offsetWidth;
+      gloss.style.left = Math.max(8, Math.min(sr.width - gw - 8, wr.left - sr.left)) + "px";
+      gloss.style.top = (wr.bottom - sr.top + 8) + "px";
+      setTimeout(clear, 2600);
+      return;
+    }
+    const ln = e.target.closest(".ln");
+    if (ln) { clear(); state.t = Number(ln.dataset.i) * STEP; state.playing = true; render(); }
+  });
+  document.addEventListener("click", e => { if (!e.target.closest(".w")) clear(); });
+}
+
+let lastLine = -1;
+function render() {
+  const idx = lineIndex();
+  const p = state.t / DURATION;
+  const on = Math.floor(p * BARS);
+  $$("#wave i").forEach((b, i) => b.classList.toggle("on", i < on));
+  const wave = $("#wave");
+  wave.style.setProperty("--p", p.toFixed(4));
+  wave.setAttribute("aria-valuenow", String(Math.round(p * 100)));
+  $("#tNow").textContent = fmt(state.t);
+  $("#tEnd").textContent = fmt(DURATION);
+  if (idx !== lastLine) {
+    lastLine = idx;
+    const cur = $("#curLine span");
+    cur.textContent = LINES[idx];
+    cur.style.animation = "none";
+    void cur.offsetWidth;
+    cur.style.animation = "";
+    $$(".ln").forEach((el, i) => {
+      el.classList.toggle("now", i === idx);
+      el.classList.toggle("past", i < idx);
+    });
+  }
+  const play = $("#play");
+  play.querySelector("use").setAttribute("href", state.playing ? "#i-pause" : "#i-play");
+  play.setAttribute("aria-label", state.playing ? "Pause" : "Play");
+  $$("[data-mark]").forEach(m => m.classList.toggle("dance", state.playing));
+  const zoneIcon = $("[data-act='toggle'] use");
+  if (zoneIcon) zoneIcon.setAttribute("href", state.playing ? "#i-pause" : "#i-play");
+}
+
+function tick() {
+  if (!state.playing) return;
+  state.t += 0.2;
+  if (state.t >= DURATION) state.t = 0;
+  render();
+}
+
+function skip(n) {
+  const i = (lineIndex() + n + LINES.length) % LINES.length;
+  state.t = i * STEP;
+  render();
+}
+
+function zoneNote(msg) {
+  const el = $("#zoneNote");
+  if (el) el.textContent = msg;
+}
+
+function bindPlayer() {
+  $("#play").addEventListener("click", () => { state.playing = !state.playing; render(); });
+  $("#next").addEventListener("click", () => skip(1));
+  $("#prev").addEventListener("click", () => skip(-1));
+  $("#curLine").addEventListener("click", () => { $("#lyrics").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
+  $("#zones").addEventListener("click", e => {
+    const b = e.target.closest(".zone");
+    if (!b) return;
+    const d = T[state.lang];
+    if (b.dataset.act === "toggle") {
+      state.playing = !state.playing;
+      zoneNote(state.playing ? d.zoneToggleOn : d.zoneTogglePause);
+    } else if (b.dataset.act === "back") {
+      state.t = Math.max(0, state.t - 10);
+      zoneNote(d.zoneBack + " · " + fmt(state.t));
+    } else {
+      state.t = Math.min(DURATION - 0.1, state.t + 10);
+      zoneNote(d.zoneFwd + " · " + fmt(state.t));
+    }
+    render();
+  });
+}
+
+function applyPalette(key) {
+  const p = PALETTES[key];
+  const root = document.documentElement.style;
+  root.setProperty("--a", p.a);
+  root.setProperty("--b", p.b);
+  root.setProperty("--c", p.c);
+  $$("#swatches button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.p === key)));
+}
+
+function buildSwatches() {
+  const box = $("#swatches");
+  box.innerHTML = Object.entries(PALETTES).map(([k, p]) =>
+    `<button type="button" data-p="${k}" aria-label="${p.name}" aria-pressed="${k === "dusk"}" style="background:linear-gradient(145deg,${p.a},${p.b} 70%,${p.c})"></button>`
+  ).join("");
+  box.addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (b) applyPalette(b.dataset.p);
+  });
+}
+
+function renderRows(tab) {
+  $("#rows").innerHTML = LIB[tab].map(([t, s, g1, g2, icon, tag]) =>
+    `<li class="row"><span class="art" style="--g1:${g1};--g2:${g2}"><svg aria-hidden="true"><use href="#i-${icon}"/></svg></span><div><b>${t}</b><span>${s}</span></div>${tag ? `<em>${tag}</em>` : ""}</li>`
+  ).join("");
+}
+
+function bindLibrary() {
+  renderRows("songs");
+  $("#pills").addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    $$("#pills button").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+    renderRows(b.dataset.tab);
+  });
+}
+
+const BANDS = [["60 Hz", 0.58], ["230 Hz", 0.5], ["910 Hz", 0.46], ["3.6 kHz", 0.56], ["14 kHz", 0.64]];
+const eq = BANDS.map(b => b[1]);
+let bassOn = false;
+
+function db(v) {
+  const n = Math.round((v - 0.5) * 24);
+  return (n > 0 ? "+" : "") + n + " dB";
+}
+
+function paintBands() {
+  $$("#bands .band").forEach((el, i) => {
+    el.querySelector(".fill").style.setProperty("--v", (eq[i] * 100) + "%");
+    el.querySelector("output").textContent = db(eq[i]);
+  });
+}
+
+function buildEq() {
+  const box = $("#bands");
+  box.innerHTML = BANDS.map(([f]) => `<div class="band"><output></output><div class="track" role="slider" aria-label="${f}" tabindex="0"><div class="fill"></div></div><label>${f}</label></div>`).join("");
+  paintBands();
+  $$("#bands .track").forEach((track, i) => {
+    let down = false;
+    const set = e => {
+      const r = track.getBoundingClientRect();
+      eq[i] = Math.min(1, Math.max(0.04, 1 - (e.clientY - r.top) / r.height));
+      paintBands();
+    };
+    track.addEventListener("pointerdown", e => { down = true; track.setPointerCapture(e.pointerId); set(e); });
+    track.addEventListener("pointermove", e => { if (down) set(e); });
+    track.addEventListener("pointerup", () => { down = false; });
+    track.addEventListener("pointercancel", () => { down = false; });
+    track.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp") { eq[i] = Math.min(1, eq[i] + 0.04); paintBands(); e.preventDefault(); }
+      if (e.key === "ArrowDown") { eq[i] = Math.max(0.04, eq[i] - 0.04); paintBands(); e.preventDefault(); }
+    });
+  });
+  const bass = $("#bass");
+  let saved = eq[0];
+  bass.addEventListener("click", () => {
+    bassOn = !bassOn;
+    bass.setAttribute("aria-pressed", String(bassOn));
+    if (bassOn) { saved = eq[0]; eq[0] = 0.95; } else { eq[0] = saved; }
+    paintBands();
+  });
+}
+
+function buildQr() {
+  const n = 25;
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const finder = (x, y) => {
+    const inBox = (ox, oy) => x >= ox && x < ox + 7 && y >= oy && y < oy + 7;
+    const at = (ox, oy) => {
+      const dx = x - ox, dy = y - oy;
+      const edge = dx === 0 || dx === 6 || dy === 0 || dy === 6;
+      const core = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4;
+      return edge || core;
+    };
+    if (inBox(0, 0)) return at(0, 0);
+    if (inBox(n - 7, 0)) return at(n - 7, 0);
+    if (inBox(0, n - 7)) return at(0, n - 7);
+    return null;
+  };
+  const reserved = (x, y) => (x < 8 && y < 8) || (x >= n - 8 && y < 8) || (x < 8 && y >= n - 8);
+  let d = "";
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const f = finder(x, y);
+      const on = f !== null ? f : (reserved(x, y) ? false : rnd() > 0.5);
+      if (on) d += `M${x} ${y}h1v1h-1z`;
+    }
+  }
+  $("#qr").innerHTML = `<path d="${d}" fill="#0E0C14"/>`;
+}
+
+function bindThemes() {
+  const mini = $("#mini");
+  $("#themeChips").addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    $$("#themeChips button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    const t = b.dataset.t;
+    mini.removeAttribute("style");
+    if (t === "dynamic") {
+      const keys = Object.keys(PALETTES);
+      const p = PALETTES[keys[Math.floor(Math.random() * keys.length)]];
+      mini.dataset.t = "dark";
+      mini.style.setProperty("--m-a", p.a);
+      mini.style.setProperty("--m-b", p.b);
+    } else {
+      mini.dataset.t = t;
+    }
+  });
+}
+
+function bindLang() {
+  $$("[data-lang]").forEach(b => b.addEventListener("click", () => setLang(b.dataset.lang)));
+}
+
+
+const REVEAL_SEL = ".head, .facts > div, .lyr-stage, .lyr-side, .zone-wrap, .lib-demo, .lib-intro, .eq, .stat, .party, .look-ctl, .mini, .dl, .faq details, .hero-copy > *";
+let revealObs = null;
+function watchReveal() {
+  const els = $$(REVEAL_SEL).filter(el => !el.classList.contains("rv"));
+  if (!("IntersectionObserver" in window) || reduce) { els.forEach(el => el.classList.add("rv", "in")); return; }
+  if (!revealObs) {
+    revealObs = new IntersectionObserver(entries => {
+      entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); revealObs.unobserve(en.target); } });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+  }
+  els.forEach(el => {
+    const sibs = [...el.parentElement.children].filter(c => c.matches(REVEAL_SEL));
+    el.style.setProperty("--rd", (Math.min(sibs.indexOf(el), 8) * 0.07).toFixed(2) + "s");
+    el.classList.add("rv");
+    revealObs.observe(el);
+  });
+}
+
+function bindFx() {
+  const nav = $(".nav");
+  const bar = $("#progress");
+  const links = $$(".nav nav a");
+  const targets = links.map(a => $(a.getAttribute("href"))).filter(Boolean);
+  let raf = 0;
+  const onScroll = () => {
+    raf = 0;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    bar.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 0})`;
+    nav.classList.toggle("scrolled", scrollY > 8);
+    let cur = null;
+    targets.forEach(t => { if (t.getBoundingClientRect().top < innerHeight * 0.4) cur = t.id; });
+    links.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + cur));
+  };
+  addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(onScroll); }, { passive: true });
+  addEventListener("resize", onScroll);
+  onScroll();
+
+  const wrap = $("#phoneWrap");
+  if (wrap && !reduce && matchMedia("(hover: hover)").matches) {
+    wrap.addEventListener("pointermove", e => {
+      const r = wrap.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      wrap.style.setProperty("--ry", (x * 14).toFixed(2) + "deg");
+      wrap.style.setProperty("--rx", (-y * 10).toFixed(2) + "deg");
+    });
+    wrap.addEventListener("pointerleave", () => { wrap.style.setProperty("--ry", "0deg"); wrap.style.setProperty("--rx", "0deg"); });
+  }
+
+  document.addEventListener("pointermove", e => {
+    const c = e.target.closest && e.target.closest(".facts > div");
+    if (!c) return;
+    const r = c.getBoundingClientRect();
+    c.style.setProperty("--mx", (e.clientX - r.left) + "px");
+    c.style.setProperty("--my", (e.clientY - r.top) + "px");
+  });
+}
+
+function init() {
+  let saved = null;
+  try { saved = localStorage.getItem("sonora-lang"); } catch (e) {}
+  buildWave();
+  buildLyrics();
+  buildSwatches();
+  bindPlayer();
+  bindLibrary();
+  buildEq();
+  buildQr();
+  bindThemes();
+  bindLang();
+  bindFx();
+  setLang(saved === "en" || saved === "bn" ? saved : "bn");
+  render();
+  resolveRelease();
+  setInterval(tick, 200);
+}
+
+init();
+</script>
+</body>
+</html>
