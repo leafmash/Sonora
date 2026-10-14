@@ -7,12 +7,12 @@ on:
       - "drop/**"
   workflow_dispatch:
     inputs:
-      version:
-        description: "Release version, e.g. 1.1.0. Leave empty to only build."
-        required: false
-        default: ""
+      release:
+        description: "Also create a draft release from this build"
+        type: boolean
+        default: false
       notes:
-        description: "What's new (shown to users in the update pop-up)"
+        description: "What's new (shown in the update pop-up). Used only when creating a release"
         required: false
         default: ""
 
@@ -35,12 +35,27 @@ jobs:
             echo "No zip file found in drop/"
             exit 1
           fi
+          name=$(basename "$latest" .zip)
+          detected=$(echo "$name" | grep -Eo '[0-9]+(\.[0-9]+)+' | head -n 1 || true)
+          if [ -n "$detected" ]; then
+            version="$detected"
+            found="true"
+          else
+            version="1.0.0"
+            found="false"
+          fi
+          echo "Zip: $latest"
+          echo "App version: $version (found in file name: $found)"
           echo "path=$latest" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "found=$found" >> "$GITHUB_OUTPUT"
 
       - name: Extract project
+        env:
+          ZIP_PATH: ${{ steps.zip.outputs.path }}
         run: |
           mkdir -p "$RUNNER_TEMP/project"
-          unzip -q "${{ steps.zip.outputs.path }}" -d "$RUNNER_TEMP/project"
+          unzip -q "$ZIP_PATH" -d "$RUNNER_TEMP/project"
           settings=$(find "$RUNNER_TEMP/project" -maxdepth 3 \( -name settings.gradle.kts -o -name settings.gradle \) | head -n 1)
           if [ -z "$settings" ]; then
             echo "No Gradle project found inside the zip"
@@ -83,7 +98,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           ACOUSTID_KEY: ${{ secrets.ACOUSTID_KEY }}
-          VERSION_NAME: ${{ inputs.version }}
+          VERSION_NAME: ${{ steps.zip.outputs.version }}
         run: gradle --no-daemon assembleRelease
 
       - name: Collect APK
@@ -93,16 +108,18 @@ jobs:
           ls -l "$RUNNER_TEMP/out"
 
       - name: Create draft release
-        if: ${{ inputs.version != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release }}
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.zip.outputs.version }}
+          FOUND: ${{ steps.zip.outputs.found }}
           NOTES: ${{ inputs.notes }}
         run: |
-          if ! echo "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then
-            echo "Version must look like 1.1.0"
+          if [ "$FOUND" != "true" ]; then
+            echo "The zip name has no version, so a release can't be created. Rename it like Sonora-1.1.0.zip"
             exit 1
           fi
+          NOTES="${NOTES:-Bug fixes and improvements}"
           cp "$RUNNER_TEMP/out/Sonora.apk" "$RUNNER_TEMP/out/Sonora-$VERSION.apk"
           gh release create "v$VERSION" "$RUNNER_TEMP/out/Sonora-$VERSION.apk" \
             --repo "$GITHUB_REPOSITORY" \
