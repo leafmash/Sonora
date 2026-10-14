@@ -131,22 +131,17 @@ jobs:
           cp "$RUNNER_TEMP/out/Sonora.apk" "$RUNNER_TEMP/out/Sonora-$APP_VERSION.apk"
           ls -l "$RUNNER_TEMP/out"
 
-      - name: Create release
+      - name: Create draft release
         if: ${{ (github.event_name == 'push' && steps.zip.outputs.channel == 'drop') || inputs.release }}
         env:
           GH_TOKEN: ${{ github.token }}
           DISPATCH_NOTES: ${{ inputs.notes }}
-          IS_PUSH: ${{ github.event_name == 'push' && steps.zip.outputs.channel == 'drop' }}
         run: |
           NOTES="$DISPATCH_NOTES"
           if [ -z "$NOTES" ] && [ -f drop/notes.txt ]; then
             NOTES="$(cat drop/notes.txt)"
           fi
           NOTES="${NOTES:-Bug fixes and improvements}"
-          DRAFT_FLAG="--draft"
-          if [ "$IS_PUSH" = "true" ]; then
-            DRAFT_FLAG=""
-          fi
           if gh release view "v$APP_VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             echo "Release v$APP_VERSION already exists. Increase the number in version.txt"
             exit 1
@@ -156,7 +151,7 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Sonora $APP_VERSION" \
             --notes "$NOTES" \
-            $DRAFT_FLAG
+            --draft
 
       - name: Upload APK
         uses: actions/upload-artifact@v6
